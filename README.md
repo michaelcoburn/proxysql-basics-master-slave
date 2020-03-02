@@ -36,21 +36,21 @@ By just using it, you will also add a proxy later to shield the database, adds H
 - Connection pooling and Multiplexing
 - Read/Write Split, Read/Write Sharding
 - Load balancing, Cluster Aware, Seamless failover
-- Query mirroring, Query Throtttling, Query Timeout
+- Query mirroring, Query Throttling, Query Timeout
 
 ## What is NOT ProxySQL
 
-A failover tool. Is not a replacement of MHA/Orchestator/etc… You'd still need to use a tool like that to perform the failovers. 
+A failover tool. It is not a replacement for MHA/Orchestator/etc… You'll still need to use a tool like these to perform the failover. 
 
 ## Creating the tutorial environment
 
-This tutorial uses Virtualbox and Vagrant. Is assumed that you are familiar with this tools (explanation of them is out of scope)
+This tutorial uses Virtualbox and Vagrant. It assumes that you are familiar with these two tools (explanation of them is out of scope)
 
-Follow this steps to get a setup:
+Follow these steps to setup your environment:
 
 ### Install VirtualBox. 
 
-Version 5.1.18 works. Download Virtualbox from [here](https://www.virtualbox.org/wiki/Downloads).
+Version 5.1.18 works. Download VirtualBox from [here](https://www.virtualbox.org/wiki/Downloads).
 
 ### Install Vagrant. 
 
@@ -86,7 +86,7 @@ Run
 cd proxysql-basics-master-slave; vagrant up; vagrant hostmanager;
 ```
 
-The whole process takes a while the first time (around 20 minutes) so go grab some coffee and be back later.
+The whole process takes a while the first time (around 20 minutes) so go grab some coffee and come back later.
 
 Continue when the environment is done.
 
@@ -100,15 +100,15 @@ sudo yum install -y proxysql.x86_64 Percona-Server-client-56.x86_64
 sudo service proxysql start 
 ```
 
-## Accessing the ProxySQL admin
+## Accessing ProxySQL admin console
 
-The Admin can be accessed using the MySQL Cllient as if it was a regular MySQL installation, you just need to use the port 6032. The default credential values are admin/admin (user/pass):
+The Admin can be accessed using the MySQL Cllient as if it was a regular MySQL installation, you just need to use port 6032. The default credential values are admin/admin (user/pass):
 
 ```mysql
 mysql -u admin -padmin -h 127.0.0.1 -P6032 --prompt='Admin> '
 ```
 
-You should be able to see this databases:
+You should be able to see these databases:
 
 ```mysql
 Admin> show databases;
@@ -182,7 +182,7 @@ LOAD MYSQL VARIABLES TO RUNTIME;
 SAVE MYSQL VARIABLES TO DISK;
 ```
 
-Now the change is really done.
+Now the changes are really done.
 
 ### Setting the backend MySQL user
 
@@ -194,7 +194,7 @@ In the Master, create the user:
 GRANT ALL PRIVILEGES ON *.* TO proxysql@'%' IDENTIFIED BY 'proxysql';
 ```
 
-And now let ProxySQL know the data:
+Configure ProxySQL to permit this user:
 
 ```MySQL
 INSERT INTO mysql_users (username,password, default_hostgroup) VALUES ('proxysql','proxysql',1);
@@ -207,7 +207,7 @@ LOAD MYSQL USERS TO RUNTIME;
 SAVE MYSQL USERS TO DISK;
 ```
 
-Now the config is actually on runtime.
+Now the user is applied to the runtime configuration.
 
 ### Setting the servers
 
@@ -237,7 +237,7 @@ INSERT INTO mysql_replication_hostgroups (writer_hostgroup, reader_hostgroup) VA
 
 Let's add the server, but before a note:
 
-*NOTE: If you wish that the master gets not only "write" traffic but also "read" traffic, it needs to belong to both hostgroups. A way to achieve this is by setting read_only=1 on the master before inserting it and then after the insert rollback the value to readn_only=0. Or you just could add it directly to both hostgroups.*
+*NOTE: If you wish that the master gets not only "write" traffic but also "read" traffic, it needs to belong to both hostgroups. A way to achieve this is by setting read_only=1 on the master before inserting it and then after the insert rollback the value to read_only=0. Or you just could add it directly to both hostgroups.*
 
 Now,  the inserts:
 
@@ -355,7 +355,7 @@ Perfect!
 NO!
 
 **What happened then?** 
-ProxySQL is NOT a failover tool. Like we mention at the beggining, is a routing tool. What happen is that since we are using the special Replication hostgroup feature, ProxySQL was informed that the Master changed by changing the read_onluy variable, but mysql1 was still the master and mysql2 and mysql3 were still replicating from it. 
+ProxySQL is NOT a failover tool. Like we mention at the beggining, is a routing tool. What happen is that since we are using the special Replication hostgroup feature, ProxySQL was informed that the Master changed by changing the read_only variable, but mysql1 was still the master and mysql2 and mysql3 were still replicating from it. 
 
 **What if we just do "SELECT @@hostname;"? No explicitly transaction involved.**
 
