@@ -88,21 +88,24 @@ cd proxysql-basics-master-slave; vagrant up; vagrant hostmanager;
 
 The whole process takes a while the first time (around 20 minutes) so go grab some coffee and be back later.
 
-Continue when the environment is done.
+# ProxySQL
 
-## Install ProxySQL from the Percona repo
+## Connect to App VM
 
-In the App VM (vagrant ssh app), run the following commands:
+```vagrant ssh app```
+
+## Install ProxySQL
 
 ```bash
 sudo yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
 sudo yum install -y proxysql.x86_64 Percona-Server-client-56.x86_64
-sudo service proxysql start 
+sudo systemctl enable proxysql
+sudo systemctl start proxysql
 ```
 
-## Accessing the ProxySQL admin
+## Accessing ProxySQL admin
 
-The Admin can be accessed using the MySQL Cllient as if it was a regular MySQL installation, you just need to use the port 6032. The default credential values are admin/admin (user/pass):
+The Admin can be accessed using the MySQL Cllient as if it was a regular MySQL installation, you just need to use port 6032. The default credentials are admin/admin (user/pass):
 
 ```mysql
 mysql -u admin -padmin -h 127.0.0.1 -P6032 --prompt='Admin> '
@@ -129,6 +132,8 @@ Let's configure everything for the Master/Slave topology
 
 On **mysql1**:
 
+```vagrant ssh mysql1```
+
 ```mysql
 grant replication slave, replication client on *.* to repl@'192.168.70.%' identified by 'repl';
 ```
@@ -137,7 +142,7 @@ On **mysql2** and **mysql3**:
 
 NOTE: Please make sure the server_id is different on each server. The provision playbooks is not working well for the moment :) Fix coming soon.
 
-```Mysql
+```mysql
 change master to master_host = 'mysql1', master_user = 'repl', master_password='repl', master_log_file = 'mysql-bin.000001', master_log_pos = 330; start slave;
 ```
 
@@ -153,7 +158,7 @@ Let's start with the users
 
 ### Setting the Monit user
 
-ProxySQL perform the monitoring checks using this user. This is needed for things like checking the value of the read_only variable.
+ProxySQL performs the monitoring checks using this user. This is needed for things like checking the value of the read_only variable.
 
 This user requires the REPLICATION CLIENT grant for now. Just create it on the master and let the replication do the rest:
 
@@ -219,7 +224,7 @@ Server info is stored in the **mysql_servers** table. The most basic amount of i
 
 #### Replication hostgroup
 
-You can add a server to all the hostgroups that you want. This will help on the query routing (eventually the hostgroup is the destination of the query rlues) and to have a controlled load distribution, among other things.
+You can add a server to all the hostgroups that you want. This will help on the query routing (eventually the hostgroup is the destination of the query rules) and to have a controlled load distribution, among other things.
 
 However, ProxySQL in an effort to simplify things have the special "replication hostgroup" type which is nothing that a way to say which hostgroup holds the master and which one holds the slaves. 
 
